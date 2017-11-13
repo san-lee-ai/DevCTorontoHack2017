@@ -7,7 +7,7 @@ Follow these steps to get your team's bot configured and off the ground.
 ## Update for Submissions
  * Team number: 4
  * Team members: Bonnie Jung, Joseph Ryu, Vincent Shin, San Lee
- * Hack: Shopyfi API, Azure Cognition API, Facebook App, Messenger Platform, Quick Reply, Botmok (https://botmock.com/view/de2b35f0-c70a-11e7-804a-affc0f7dc49a), wit.ai, and so on.
+ * Hack: Shopify API, Azure Cognition API, Facebook App, Messenger Platform, Quick Reply, Botmock (https://botmock.com/view/de2b35f0-c70a-11e7-804a-affc0f7dc49a), wit.ai, and so on.
  ### Our major goal was building a personal shopper with impression: "I can’t believe it is a bot!"
   Features we could have added if we had more time:
    * Price match
