@@ -58,114 +58,84 @@ var productNames = [
 // Azure
 let azuerUri = 'westcentralus.api.cognitive.microsoft.com' // westus.api.cognitive.microsoft.com
 let KeyPhrasePath = '/text/analytics/v2.0/keyPhrases'
-// https://westus.api.cognitive.microsoft.com/linguistics/v1.0/analyze
-let azuerTextUri = 'westus.api.cognitive.microsoft.com'
-let textComponentsPath = '/luis/v2.0'
 let azureAccessKey = 'eb01336c87224b9497fc001935640b3f'
-let azureTextKey = ''
+
 var userInputText = ''
 
-let analyzer_response_handler = function (response) {
-  let body = '';
-  response.on ('data', function (d) {
-      body += d;
-  });
-  response.on ('end', function () {
-    let body_ = JSON.parse (body);
-    let body__ = JSON.stringify (body_, null, '  ');
-    console.log('AZURE', body__);
-  });
-  response.on ('error', function (e) {
-      console.log ('AZURE Error: ' + e.message);
-  });
-}
+let responseHandler = function (response) {
+  let body = ''
+  response.on('data', function (d) {
+    body += d
+  })
+  response.on('end', function () {
+    let body_ = JSON.parse(body)
+    let body__ = JSON.stringify(body_, null, '  ')
+    console.log('AZURE result: ', body__)
+    let searchWords = body_.documents[0].keyPhrases
+    console.log('keyPhrases form Azure:', searchWords)
+    let splitSearchWords = []
+    if (searchWords.length > 0) {
+      // use keyPhrases
+      splitSearchWords = searchWords[0].split(' ')
+    } else {
+      // reuse input with word length > 2
+      let userInputs = userInputText.split(' ')
+      for (let i = 0; i < userInputs.length; i++) {
+        if (userInputs[i].length > 2) {
+          splitSearchWords.push(userInputs[i])
+        }
+      }
+    }
 
-let response_handler = function (response) {
-    let body = '';
-    response.on ('data', function (d) {
-        body += d;
-    });
-    response.on ('end', function () {
-        let body_ = JSON.parse (body);
-        let body__ = JSON.stringify (body_, null, '  ');
-        console.log('AZURE', body__);
-        let searchWords = body_.documents[0].keyPhrases
-        let splitSearchWords = []
-        if (searchWords.length > 0) {
-          splitSearchWords = searchWords[0].split(' ');
+    // check if splitSearchWords array have product name
+    let foundProduct = ''
+    for (let i = 0; i < splitSearchWords.length; i++) {
+      productNames.forEach(function (name) {
+        if (name.toUpperCase().includes(splitSearchWords[i].toUpperCase())) {
+          foundProduct = name
         }
-        if (splitSearchWords.length > 0) {
-          // for (let i = 0; i < splitSearchWords.length; i++) {
-          //   let foundProduct = false
-          //   productNames.forEach(function (names) {
-          //     if (names.toUpperCase() === splitSearchWords[i].toUpperCase()) {
-          //       foundProduct = true
-          //     }
-          //   })
-          //   if (foundProduct) {
-          //
-          //   }
-          // }
-          if (splitSearchWords.length > 0) {
-            let payload = {
-              names: splitSearchWords,
-              action: 'QR_PRODUCT_SEARCH'
-            }
-            respondToHelpRequestWithTemplates(senderID, JSON.stringify(payload))
-            // respondToHelpRequestWithTemplates(searchedProducts, senderID)
-          } else {
-            returnMessageToUser('Sorry, no product found for you.')
-            // _getTextComponents()
-          }
-          console.log('searchedProducts', searchedProducts.length);
-        } else {
-          returnMessageToUser('Sorry, no product found for you.')
-          // _getTextComponents()
-        }
-       console.log ('splitSearchWords : ' + splitSearchWords);
-       console.log('searchWords:', searchWords);
-    });
-    response.on ('error', function (e) {
-        console.log ('AZURE Error: ' + e.message);
-    });
-};
+      })
+    }
+
+    if (foundProduct !== '') {
+      let payload = {
+        names: foundProduct,
+        action: 'QR_PRODUCT_SEARCH'
+      }
+      respondToHelpRequestWithTemplates(senderID, JSON.stringify(payload))
+    } else {
+      // let message = `Sorry, we don't have "${splitSearchWords.join(' ')}" but how about this?`
+      let message = `Sorry, thank you for asking "${splitSearchWords.join(' ')}" but how about this?`
+      returnMessageToUser(message)
+      // need to search with other word
+      let payload = {
+        names: splitSearchWords.join(' '),
+        action: 'QR_PRODUCT_SEARCH'
+      }
+      respondToHelpRequestWithTemplates(senderID, JSON.stringify(payload))
+    }
+  })
+  response.on('error', function (e) {
+    console.log('AZURE Error: ' + e.message)
+  })
+}
 
 let _getKeyPhrases = function (documents) {
-    userInputText = documents
-    let body = JSON.stringify (documents);
-    console.log(body)
+  let body = JSON.stringify(documents)
+  console.log(body)
 
-    let request_params = {
-        method : 'POST',
-        hostname : azuerUri,
-        path : KeyPhrasePath,
-        headers : {
-          'Ocp-Apim-Subscription-Key' : azureAccessKey,
-        }
-    };
+  let requestParams = {
+    method: 'POST',
+    hostname: azuerUri,
+    path: KeyPhrasePath,
+    headers: {
+      'Ocp-Apim-Subscription-Key': azureAccessKey
+    }
+  }
 
-    let req = https.request (request_params, response_handler);
-    req.write (body);
-    req.end ();
-}
-
-let _getTextComponents = function () {
-    let documents = userInputText
-    let body = JSON.stringify (documents);
-    console.log(body)
-
-    let request_params = {
-        method : 'POST',
-        hostname : azuerTextUri,
-        path : textComponentsPath,
-        headers : {
-          'Ocp-Apim-Subscription-Key' : azureTextKey,
-        }
-    };
-
-    let req = https.request (request_params, analyzer_response_handler);
-    req.write (body);
-    req.end ();
+  let req = https.request(requestParams, responseHandler)
+  req.write(body)
+  req.end()
 }
 
 const
@@ -287,8 +257,8 @@ app.get('/product_description', function(req, res) {
   var product_id = req.query['id'];
   if (product_id !== 'null') {
     console.log("[app.get] product id:" + product_id);
-    var sh_product = shopify.product.get(product_id);
-    sh_product.then(function(product) {
+    var shProduct = shopify.product.get(product_id);
+    shProduct.then(function(product) {
       console.log(product.options[0].values);
       res.status(200).send(product.body_html);
     }, function(error) {
@@ -379,6 +349,7 @@ function receivedMessage(event) {
   }
 
   var messageText = message.text;
+  userInputText = messageText
   if (messageText) {
     let doc = {
       id : '1',
@@ -551,19 +522,15 @@ function handleQuickReplyResponse(event) {
  * swipe from side to side to see it
  *
  */
- function respondToHelpRequestWithTemplates(recipientId, requestForHelpOnFeature) {
-  console.log("[respondToHelpRequestWithTemplates] handling help request for %s", requestForHelpOnFeature);
-  var templateElements = [];
-  var requestPayload = JSON.parse(requestForHelpOnFeature);
+function respondToHelpRequestWithTemplates (recipientId, requestForHelpOnFeature) {
+  console.log('[respondToHelpRequestWithTemplates] handling help request for %s', requestForHelpOnFeature)
+  var templateElements = []
+  var requestPayload = JSON.parse(requestForHelpOnFeature)
 
   switch (requestPayload.action) {
-
     case 'GET_STARTED':
-
-      console.log('************GET_STARTED*********');
-
-      var text = "Please select one of popular options below. You can also type to get more tailored response"
-      if(requestPayload.again === true) {
+      var text = 'Please select one of popular options below. You can also type to get more tailored response'
+      if (requestPayload.again === true) {
         text = "Sorry we couldn't find what you were looking for. Try our options again"
       }
       var buttons = [
@@ -573,18 +540,18 @@ function handleQuickReplyResponse(event) {
         sectionButton('Bestsellers', 'QR_PRODUCT_SEARCH', {})
       ]
       _sendMessageWithButtons(recipientId, text, buttons)
-      break;
+      break
 
     case 'QR_GET_PRODUCT_LIST':
-      var products = shopify.product.list({limit: requestPayload.limit});
-      products.then(function(listOfProducs) {
-        listOfProducs.forEach(function(product) {
-          var url = HOST_URL + "/product.html?id=" + product.id;
+      var products = shopify.product.list({limit: requestPayload.limit})
+      products.then(function (listOfProducs) {
+        listOfProducs.forEach(function (product) {
+          var url = HOST_URL + '/product.html?id=' + product.id
           templateElements.push({
             title: product.title,
             subtitle: product.tags,
             image_url: product.image.src,
-            buttons:[
+            buttons: [
               {
                 "type":"web_url",
                 "url": url,
@@ -594,8 +561,8 @@ function handleQuickReplyResponse(event) {
               },
               sectionButton('Get options', 'QR_GET_PRODUCT_OPTIONS', {id: product.id})
             ]
-          });
-        });
+          })
+        })
 
         var messageData = {
           recipient: {
@@ -603,55 +570,56 @@ function handleQuickReplyResponse(event) {
           },
           message: {
             attachment: {
-              type: "template",
+              type: 'template',
               payload: {
-                template_type: "generic",
+                template_type: 'generic',
                 elements: templateElements
               }
             }
           }
-        };
+        }
 
-        callSendAPI(messageData);
-      });
-
-      break;
+        callSendAPI(messageData)
+      })
+      break
 
     case 'QR_NEW_PRODUCT':
       _showSelectedProductsAsMessage(_searchNewProducts(5), recipientId)
-      break;
+      break
 
     case 'QR_DISCOUNTED_PRODUCT':
       _showSelectedProductsAsMessage(_searchDiscountProducts(), recipientId)
-      break;
+      break
 
     case 'QR_GET_PRODUCT_OPTIONS':
-      var sh_product = shopify.product.get(requestPayload.id);
-      sh_product.then(function(product) {
-        var options = '';
-        product.options.map(function(option) {
-          options = options + option.name + ': ' + option.values.join(',') + "\n";
-        });
+      var shProduct = shopify.product.get(requestPayload.id)
+      shProduct.then(function (product) {
+        var options = ''
+        product.options.map(function (option) {
+          options = options + option.name + ': ' + option.values.join(',') + '\n'
+        })
         var messageData = {
           recipient: {
             id: recipientId
           },
           message: {
             text: options.substring(0, 640)
-          },
-        };
-        callSendAPI(messageData);
-      });
+          }
+        }
+        callSendAPI(messageData)
+      })
+      break
 
-      case 'QR_PRODUCT_SEARCH':
-        _showSelectedProductsAsMessage(_searchByTitle(requestPayload.names[0]), recipientId)
-        break;
+    case 'QR_PRODUCT_SEARCH':
+      console.log('search by title:', requestPayload.names)
+      _showSelectedProductsAsMessage(_searchByTitle(requestPayload.names), recipientId)
+      break
 
-
-
-      break;
+    default:
+      text = 'Thank you for shopping with us, may I help you?'
+      returnMessageToUser(text)
+      break
   }
-
 }
 
 /*
@@ -686,10 +654,10 @@ function receivedDeliveryConfirmation(event) {
  * https://developers.facebook.com/docs/messenger-platform/webhook-reference/postback-received
  *
  */
-function receivedPostback(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var timeOfPostback = event.timestamp;
+function receivedPostback (event) {
+  var senderID = event.sender.id
+  var recipientID = event.recipient.id
+  var timeOfPostback = event.timestamp
 
   if (productsLoaded === false) {
     let products = shopify.product.list({limit: 250})
@@ -703,12 +671,12 @@ function receivedPostback(event) {
 
   // The 'payload' param is a developer-defined field which is set in a postback
   // button for Structured Messages.
-  var payload = event.postback.payload;
+  var payload = event.postback.payload
 
-  console.log("[receivedPostback] from user (%d) on page (%d) with payload ('%s') " +
-    "at (%d)", senderID, recipientID, payload, timeOfPostback);
+  console.log('[receivedPostback] from user (%d) on page (%d) with payload (\'%s\') ' + 'at (%d)',
+  senderID, recipientID, payload, timeOfPostback)
 
-  respondToHelpRequestWithTemplates(senderID, payload);
+  respondToHelpRequestWithTemplates(senderID, payload)
 }
 
 function _searchDiscountProducts () {
@@ -719,19 +687,23 @@ function _searchDiscountProducts () {
       discountedProducts.push(product)
     }
   })
-  //console.log('_searchDiscountProducts', discountedProducts);
+  // console.log('_searchDiscountProducts', discountedProducts);
   return discountedProducts
 }
 
 function _searchByTitle (keyword) {
   var products = []
   productJson.forEach(function (product) {
-    console.log('_searchByTitle', keyword.toUpperCase(), product.title.toUpperCase());
     if (product.title.toUpperCase().includes(keyword.toUpperCase())) {
       products.push(product)
     }
   })
-  console.log('_searchByTitle', products);
+  if (products.length > 0) {
+    let topItemString = products.length > 5 ? 'Top 5' : 'all of them'
+    let messageForSearch = `We have ${products.length} items for your "${keyword}" and I show you ${topItemString}.`
+    returnMessageToUser(messageForSearch)
+  }
+  console.log('_searchByTitle', products)
   return products.slice(0, 5)
 }
 
