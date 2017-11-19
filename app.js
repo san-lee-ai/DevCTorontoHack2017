@@ -560,6 +560,8 @@ function handleQuickReplyResponse(event) {
 
     case 'GET_STARTED':
 
+      console.log('************GET_STARTED*********');
+
       var text = "Please select one of popular options below. You can also type to get more tailored response"
       if(requestPayload.again === true) {
         text = "Sorry we couldn't find what you were looking for. Try our options again"

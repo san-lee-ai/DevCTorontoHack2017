@@ -1,13 +1,21 @@
 {
     "sh_shopName": "dev-circle-toronto-hackathon",
-    "host_url": "https://d0886fda.ngrok.io", //ngrok URL here
+    "host_url": "https://e0aa58d3.ngrok.io", //ngrok URL here https://9427936e.ngrok.io/webhook
 
     //FACEBOOK CREDENTIALS
-    "fb_appSecret": "2ccacc75ca28e484bfe15bf663a241fc",
-    "fb_pageAccessToken": "EAAEgrISndZB0BAExFJwCgarrhCeSNKQV7pNyBiTSZBVs8lILolHfcyqyMTSQw1zbqAg7FKPcLA0X2CvWwmanafbEKthjPZC5leb4L1shWUMSHClZAkOQHdFw0V7bqwtvYQFImuud4seZAQYojjfpB3xplP1ZBoKMvOh5XYCrXMNAZDZD",
-    "fb_validationToken": "Mango",
+    "fb_appSecret": "89e18d54a9f41e42bb5642a34570edc3", // 2ccacc75ca28e484bfe15bf663a241fc
+    "fb_pageAccessToken": "EAAEHUXoM3PMBAMcwvP7F2zoZCgxuYtxAgUWWHauJ8KxJ78ZB49elEYlhsrx8u31eaL4QM7qlwlZApFSAlBlv0MEJHcQj3ZCwAX6yi9J5DMisOHKNqLaGgkzOTnH4yZAxKy9hPgZBcms7QHNWGTAdIYMtfMy09a1PYWDVFg8ziw5QZDZD",
+    "fb_validationToken": "Hackathon",
 
     //SHOPIFY CREDENTIALS
     "sh_apiKey": "dc032c19e4460b1e9df1b31b86417fae",
     "sh_apiPassword": "52db31500c4d546381f9aedacbe707bc",
 }
+
+
+// 1. Make it sure if your Settings has correct value in https://developers.facebook.com/apps
+// 2. Webhooks Page Subscription
+//  Callback URL: https://9427936e.ngrok.io/webhook (including '/webhook')
+//  Verify Token: Hackathon (from "fb_validationToken": "Hackathon")
+// 3. Webhooks settings in Messenger, you need to subscribe right page
+// 4. Whenever you change or restart ngrok, you need to update those settings as well.
